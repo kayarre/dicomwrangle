@@ -1,2 +1,2 @@
 # dicomwrangle
-put code for dicom wrnagling
+code for dicom wrangling

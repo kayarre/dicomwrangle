@@ -283,7 +283,7 @@ if __name__ == '__main__':
         #  dcm_files.append(filePath)
     path_loc = zip(dcm_files, slice_location)
     path_loc.sort(key=lambda x: x[1])
-    dcm_file, slice_location = zip(*path_loc)
+    dcm_files, slice_location = zip(*path_loc)
     print(slice_location, acq_N)
     # get reference image
     print(len(dcm_files))
@@ -293,10 +293,12 @@ if __name__ == '__main__':
     
     #check it whether image has been interpolated
     if (hasattr(ref_image, 'SpacingBetweenSlices')):
-      if(ref_image.SpacingBetweenSlices < ref_image.SliceThickness):
-        z_spacing = float(ref_image.SpacingBetweenSlices)
+        if(ref_image.SpacingBetweenSlices < ref_image.SliceThickness):
+            z_spacing = float(ref_image.SpacingBetweenSlices)
+        else:
+            z_spacing = float(ref_image.SliceThickness)
     else:
-      z_spacing = float(ref_image.SliceThickness)
+        z_spacing = float(ref_image.SliceThickness)
 
     # load spacing values in mm
     const_pixel_spacing = (float(ref_image.PixelSpacing[0]), 
@@ -317,7 +319,7 @@ if __name__ == '__main__':
       ds = dicom.read_file(filenamedcm)
       #store the raw image data
       array_dicom[:, :, dcm_files.index(filenamedcm)] = ds.pixel_array
-    
+    '''
     testindx = np.where(array_dicom !=0)
     minx = np.min(testindx[0])
     miny = np.min(testindx[1])
@@ -325,11 +327,11 @@ if __name__ == '__main__':
     maxx = np.max(testindx[0])
     maxy = np.max(testindx[1])
     maxz = np.max(testindx[2])
-    
+    '''
     
     # Create some data
     #x, y, z = np.ogrid[-5:5:100j, -5:5:100j, -5:5:100j]
     #data = np.sin(3*x)/x + 0.05*z**2 + np.cos(3*y)
 
-    m = VolumeSlicer(data=array_dicom[minx:maxx, miny:maxy,:])
+    m = VolumeSlicer(data=array_dicom)#[minx:maxx, miny:maxy,:])
     m.configure_traits()

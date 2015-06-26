@@ -13,7 +13,8 @@ import os
 import fnmatch
 
 
-dcmpath='/Users/sansomk/Downloads/E431791260_FlowVol_01/'
+#dcmpath='/Users/sansomk/Downloads/E431791260_FlowVol_01/' # mac
+dcmpath = "/home/sansomk/caseFiles/mri/images/E431791260_FlowVol_01/mag"
 dcm_files = []
 count = 0
 dict_test = {}

@@ -132,11 +132,11 @@ def create_image_volume(image_dict, mri_2_cfd_map, image_type, return_coord=True
       # load spacing values in mm
       const_pixel_spacing = (float(ref_image.PixelSpacing[0]), 
                              float(ref_image.PixelSpacing[1]), z_spacing)
-      x = np.arange(0.0, (const_pixel_dims[0]+1)*const_pixel_spacing[0],
+      x = np.arange(const_pixel_spacing[0]/2.0, (const_pixel_dims[0]+1)*const_pixel_spacing[0]-1.0,
                     const_pixel_spacing[0])
-      y = np.arange(0.0, (const_pixel_dims[1]+1)*const_pixel_spacing[1],
+      y = np.arange(const_pixel_spacing[1]/2.0, (const_pixel_dims[1]+1)*const_pixel_spacing[1]-1.0,
                     const_pixel_spacing[1])
-      z = np.arange(0.0, (const_pixel_dims[2]+1)*const_pixel_spacing[2],
+      z = np.arange(const_pixel_spacing[2]/2.0, (const_pixel_dims[2]+1)*const_pixel_spacing[2]-1.0,
                     const_pixel_spacing[2])
       return array_dicom, x,y,z
     else:
@@ -231,8 +231,8 @@ def read_cfd_sol_file(mapped_tuple, return_coord=True):
         vx.append(float(nums[5]))
         vy.append(float(nums[6]))
         vz.append(float(nums[7]))
-  return (np.asarray(x_coords), np.asarray(y_coords), np.asarray(z_coords),
-          np.asarray(vx), np.asarray(vy), np.asarray(vz))
+  return np.asarray((x_coords, y_coords, z_coords,
+                    vx, vy, vz))
 
     
   ''' 
@@ -333,19 +333,39 @@ if __name__ == '__main__':
   print(mri_2_cfd_map)
   
   array_mag, x, y, z = create_image_volume(image_dict, mri_2_cfd_map[0], "MAG", True)
+  X, Y, Z = np.meshgrid(x,y,z)
+  print(array_mag.shape, X.shape, Y.shape, Z.shape)
 
-  from volume_slicer_adv import VolumeSlicer  
+  from volume_slicer_adv import VolumeSlicer
+  print(np.max(np.max(np.max(array_mag))))
   #m = VolumeSlicer(data=array_mag)
   #m.configure_traits()
   
   field = read_cfd_sol_file(mri_2_cfd_map[0])
-  print(len(field[0]))
-  vmag_cfd = np.sqrt(np.power(field[0],2) + np.power(field[1],2) )# + np.power(field[2],2))
-  from scipy import interpolate
+  print(field.shape)
+  vmag_cfd = np.sqrt(np.power(field[3],2) + np.power(field[4],2)  + np.power(field[5],2))
+  print(vmag_cfd.shape)
+  import matplotlib.pyplot as plt
+  from mpl_toolkits.mplot3d import Axes3D
+  fig = plt.figure()
+  ax = fig.add_subplot(111, projection='3d')  
+  ax.scatter(field[0], field[1], field[2], c=vmag_cfd)
+  
+  #from numpy import array
+  from scipy.interpolate import RegularGridInterpolator as rgi
+  from scipy import interpolate 
+  my_interpolating_function = rgi((x,y,z), array_mag, bounds_error=False, fill_value=0.0)
+  get_points_test = my_interpolating_function((field[0], field[1], field[2]))
   #print(x, y, z)
-  mag_test = interpolate.interpn(field[0:2], vmag_cfd, (x, y), method='linear', fill_value=0.0)
+  cfd_coord = field[0:3].reshape(field[0:3].shape[0], -1).T
+  print(cfd_coord.shape)
+  cfd_interp = interpolate.LinearNDInterpolator(cfd_coord, vmag_cfd, 0.0, False)
   
+  mri_coord = np.asarray((X,Y,Z)).reshape(field[0:3].shape[0], -1).T
+  print(mri_coord.shape)
+  mag_test = cfd_interp(mri_coord)
   
+  print(mag_test.shape)
   m = VolumeSlicer(data=mag_test)#[minx:maxx, miny:maxy,:])
   m.configure_traits()
 

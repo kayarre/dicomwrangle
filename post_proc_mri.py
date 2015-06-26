@@ -201,7 +201,7 @@ def sort_cfd_sol(dir_path, search_name, t_orig, trigger_time_list):
     #print(takeClosest(cfd_file_t, t), t)
   return zip(trigger_time_list, cfd_file_list)
   
-def read_cfd_sol_file(mapped_tuple, return_coord=True):
+def read_cfd_sol_file(mapped_tuple, scale, return_coord=True):
   x_coords = []
   y_coords = []
   z_coords = []    
@@ -231,8 +231,10 @@ def read_cfd_sol_file(mapped_tuple, return_coord=True):
         vx.append(float(nums[5]))
         vy.append(float(nums[6]))
         vz.append(float(nums[7]))
+  if(scale == "m2mm"):
+      rescale = 1000.00
   return np.asarray((x_coords, y_coords, z_coords,
-                    vx, vy, vz))
+                    vx, vy, vz))*rescale
 
     
   ''' 
@@ -319,14 +321,15 @@ def read_cfd_sol_file(mapped_tuple, return_coord=True):
     m.configure_traits()
 '''
 if __name__ == '__main__':
-  #dcmpath='/Users/sansomk/Downloads/E431791260_FlowVol_01/' # mac
-  dcmpath = "/home/sansomk/caseFiles/mri/images/E431791260_FlowVol_01/"
+  dcmpath='/Users/sansomk/Downloads/E431791260_FlowVol_01/' # mac
+  #dcmpath = "/home/sansomk/caseFiles/mri/images/E431791260_FlowVol_01/"
   image_dict_pkl = "image_dict.pkl"
   fn_dict = {"X":"FlowX_*.dcm", "Y":"Flowy_*.dcm", "Z":"FlowZ_*.dcm", "MAG":"Mag_*.dcm"}
   image_dict, slice_location, trigger_time = build_dcm_dict(dcmpath, fn_dict, image_dict_pkl)
   print(trigger_time)
 
-  cfd_ascii_path = "/home/sansomk/caseFiles/mri/cfd"
+  #cfd_ascii_path = "/home/sansomk/caseFiles/mri/cfd"
+  cfd_ascii_path = "/Users/sansomk/caseFiles/mri/solution_ascii"
   search_name = "mri_carotid-*"
   t_init = 2.8440  
   mri_2_cfd_map = sort_cfd_sol(cfd_ascii_path, search_name, t_init, trigger_time)
@@ -341,7 +344,7 @@ if __name__ == '__main__':
   #m = VolumeSlicer(data=array_mag)
   #m.configure_traits()
   
-  field = read_cfd_sol_file(mri_2_cfd_map[0])
+  field = read_cfd_sol_file(mapped_tuple=mri_2_cfd_map[0], scale="m2mm")
   print(field.shape)
   vmag_cfd = np.sqrt(np.power(field[3],2) + np.power(field[4],2)  + np.power(field[5],2))
   print(vmag_cfd.shape)

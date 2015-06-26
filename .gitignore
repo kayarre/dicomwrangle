@@ -55,3 +55,6 @@ docs/_build/
 
 # PyBuilder
 target/
+
+#image_file
+image_dict.pkl

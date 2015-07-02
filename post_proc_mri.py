@@ -17,10 +17,60 @@ import dicom
 #from matplotlib.widgets import Slider, Button, RadioButtons
 import fnmatch
 import pickle
+import hashlib
 
-def build_dcm_dict(dcmpath, fn_dict, image_dict_pkl="image_dict.pkl"):    
+def build_dcm_dict(dcmpath, fn_dict, image_dict_pkl="image_dict.pkl"):
+    slice_location = []
+    trigger_time = []
+    image_dict = {}
+    hash_value = hashlib.sha1(dcmpath).hexdigest()
+    #count = 0
+    for dirname, subdirlist, filelist in os.walk(dcmpath):
+        for filen in  filelist:
+            filePath = os.path.join(dirname,filen)    
+            #print(filePath)
+            #print(dirname, subdirlist, filelist)
+            #print(filePath)
+            #print(f.SliceLocation)
+            try:
+                f = dicom.read_file(filePath, stop_before_pixels=True)
+            except Exception as e: 
+               print(str(e))
+               print("error: {0}".format(filen))
+               continue
+            
+            #dictionary of images
+            if (f.TriggerTime not in image_dict.keys()):
+                image_dict[f.TriggerTime] = {}
+            if (f.SliceLocation not in image_dict[f.TriggerTime].keys()):
+                image_dict[f.TriggerTime][f.SliceLocation] = {}
+            
+            for fn_key in fn_dict.keys():
+                if( fn_key not in image_dict[f.TriggerTime][f.SliceLocation].keys()):
+                        image_dict[f.TriggerTime][f.SliceLocation][fn_key] = {}
+                #print(fn_key, filen, fn_dict[fn_key])
+                if (fnmatch.fnmatch(filen, fn_dict[fn_key])):
+                    #print('did i get here')
+                    if (f.SOPInstanceUID not in image_dict[f.TriggerTime][f.SliceLocation][fn_key].keys()):
+                        image_dict[f.TriggerTime][f.SliceLocation][fn_key][f.SOPInstanceUID] = [filePath]
+                        #print(image_dict[fn_key])
+            if (f.TriggerTime not in trigger_time):
+                trigger_time.append(f.TriggerTime)
+            if (f.SliceLocation not in slice_location):
+                slice_location.append(f.SliceLocation)
+    print("writing {0} to current working directory".format(image_dict_pkl))
+    with open(os.path.join(os.getcwd(), image_dict_pkl), "wb") as pkl_f:
+        pickle.dump(hash_value, pkl_f, -1)
+        pickle.dump(image_dict, pkl_f, -1)
+    return image_dict
+
+def load_dcm_dict(dcmpath, fn_dict, image_dict_pkl="image_dict.pkl"):    
     try:
-        image_dict = pickle.load(open(os.path.join(os.getcwd(), image_dict_pkl), "rb"))
+        with open(os.path.join(os.getcwd(), image_dict_pkl), "rb") as pkl_f:
+            hash_value = pickle.load(pkl_f)
+            image_dict = pickle.load(pkl_f)
+        if (hash_value != hashlib.sha1(dcmpath).hexdigest()):
+            raise Exception("pickle file doesn't match, rebuilding")
     except Exception as e: 
         print(str(e))
         print("no image dictionary pickle file, building one")
@@ -33,49 +83,11 @@ def build_dcm_dict(dcmpath, fn_dict, image_dict_pkl="image_dict.pkl"):
         # SliceLocation = spatial location of slice.
         # SliceThickness = the thickness of the image
         # need to figure our how to convert images to axial ones
-        slice_location = []
-        trigger_time = []
-        image_dict = {}
-        #count = 0
-        for dirname, subdirlist, filelist in os.walk(dcmpath):
-            for filen in  filelist:
-                filePath = os.path.join(dirname,filen)    
-                #print(filePath)
-                #print(dirname, subdirlist, filelist)
-                #print(filePath)
-                #print(f.SliceLocation)
-                try:
-                    f = dicom.read_file(filePath, stop_before_pixels=True)
-                except Exception as e: 
-                   print(str(e))
-                   print("error: {0}".format(filen))
-                   continue
-                
-                #dictionary of images
-                if (f.TriggerTime not in image_dict.keys()):
-                    image_dict[f.TriggerTime] = {}
-                if (f.SliceLocation not in image_dict[f.TriggerTime].keys()):
-                    image_dict[f.TriggerTime][f.SliceLocation] = {}
-                
-                for fn_key in fn_dict.keys():
-                    if( fn_key not in image_dict[f.TriggerTime][f.SliceLocation].keys()):
-                            image_dict[f.TriggerTime][f.SliceLocation][fn_key] = {}
-                    #print(fn_key, filen, fn_dict[fn_key])
-                    if (fnmatch.fnmatch(filen, fn_dict[fn_key])):
-                        #print('did i get here')
-                        if (f.SOPInstanceUID not in image_dict[f.TriggerTime][f.SliceLocation][fn_key].keys()):
-                            image_dict[f.TriggerTime][f.SliceLocation][fn_key][f.SOPInstanceUID] = [filePath]
-                            #print(image_dict[fn_key])
-                if (f.TriggerTime not in trigger_time):
-                    trigger_time.append(f.TriggerTime)
-                if (f.SliceLocation not in slice_location):
-                    slice_location.append(f.SliceLocation)
-        print("writing {0} to current working directory".format(image_dict_pkl))
-        pickle.dump(image_dict, open(os.path.join(os.getcwd(), image_dict_pkl), "wb"), -1)
+        image_dict = build_dcm_dict(dcmpath, fn_dict, image_dict_pkl="image_dict.pkl")
     else:
         print('Read the pickle file from the current directory')
-        trigger_time = image_dict.keys()
-        slice_location = image_dict[trigger_time[0]].keys()
+    trigger_time = image_dict.keys()
+    slice_location = image_dict[trigger_time[0]].keys()
         
 
     return image_dict, sorted(slice_location), sorted(trigger_time)
@@ -111,14 +123,16 @@ def create_image_volume(image_dict, mri_2_cfd_map, image_type, return_coord=True
 
     # the array is sized based on 'const_pixel_dims
     
-    array_dicom = np.zeros(const_pixel_dims, dtype=ref_image.pixel_array.dtype)
+    array_dicom = np.zeros(const_pixel_dims, dtype=np.float64) #ref_image.pixel_array.dtype)
     print(array_dicom.shape)
     #loop through all the DICOM FILES
     for filenamedcm in dcm_files:
       #read the file
       ds = dicom.read_file(filenamedcm)
       #store the raw image data
-      array_dicom[:, :, dcm_files.index(filenamedcm)] = ds.pixel_array
+      array_dicom[:, :, dcm_files.index(filenamedcm)] = (
+          np.asarray(ds.pixel_array, dtype=np.float64) * (
+          np.float64(ds.RescaleSlope) + np.float64(ds.RescaleIntercept)))
     
     #testindx = np.where(array_dicom !=0)
     #minx = np.min(testindx[0])
@@ -321,56 +335,61 @@ def read_cfd_sol_file(mapped_tuple, scale, return_coord=True):
     m.configure_traits()
 '''
 if __name__ == '__main__':
-  dcmpath='/Users/sansomk/Downloads/E431791260_FlowVol_01/' # mac
+  dcmpath='/Users/sansomk/caseFiles/mri/E431791260_FlowVol_01/' # mac
   #dcmpath = "/home/sansomk/caseFiles/mri/images/E431791260_FlowVol_01/"
   image_dict_pkl = "image_dict.pkl"
   fn_dict = {"X":"FlowX_*.dcm", "Y":"Flowy_*.dcm", "Z":"FlowZ_*.dcm", "MAG":"Mag_*.dcm"}
-  image_dict, slice_location, trigger_time = build_dcm_dict(dcmpath, fn_dict, image_dict_pkl)
-  print(trigger_time)
+  image_dict, slice_location, trigger_time = load_dcm_dict(dcmpath, fn_dict, image_dict_pkl)
+  print("trigger time", trigger_time)
 
   #cfd_ascii_path = "/home/sansomk/caseFiles/mri/cfd"
   cfd_ascii_path = "/Users/sansomk/caseFiles/mri/solution_ascii"
   search_name = "mri_carotid-*"
   t_init = 2.8440  
   mri_2_cfd_map = sort_cfd_sol(cfd_ascii_path, search_name, t_init, trigger_time)
-  print(mri_2_cfd_map)
+  print("map", mri_2_cfd_map)
   
   array_mag, x, y, z = create_image_volume(image_dict, mri_2_cfd_map[0], "MAG", True)
   X, Y, Z = np.meshgrid(x,y,z)
-  print(array_mag.shape, X.shape, Y.shape, Z.shape)
-
+  print("mri array shapes", array_mag.shape, X.shape, Y.shape, Z.shape)  
+  print("max mri value", np.max(np.max(np.max(array_mag))))
+  
   from volume_slicer_adv import VolumeSlicer
-  print(np.max(np.max(np.max(array_mag))))
   #m = VolumeSlicer(data=array_mag)
   #m.configure_traits()
   
   field = read_cfd_sol_file(mapped_tuple=mri_2_cfd_map[0], scale="m2mm")
   print(field.shape)
   vmag_cfd = np.sqrt(np.power(field[3],2) + np.power(field[4],2)  + np.power(field[5],2))
-  print(vmag_cfd.shape)
+  print("max cfd value", np.max(np.max(np.max(vmag_cfd))))
+  print("mri mag shape", vmag_cfd.shape)
+  
+  """
   import matplotlib.pyplot as plt
   from mpl_toolkits.mplot3d import Axes3D
   fig = plt.figure()
   ax = fig.add_subplot(111, projection='3d')  
   ax.scatter(field[0], field[1], field[2], c=vmag_cfd)
+  """
   
   #from numpy import array
   from scipy.interpolate import RegularGridInterpolator as rgi
   from scipy import interpolate 
-  my_interpolating_function = rgi((x,y,z), array_mag, bounds_error=False, fill_value=0.0)
-  get_points_test = my_interpolating_function((field[0], field[1], field[2]))
+  interp_function = rgi((x,y,z), array_mag, bounds_error=False, fill_value=0.0)
+  get_points_test = interp_function((field[0], field[1], field[2]))
   #print(x, y, z)
   cfd_coord = field[0:3].reshape(field[0:3].shape[0], -1).T
   print(cfd_coord.shape)
   cfd_interp = interpolate.LinearNDInterpolator(cfd_coord, vmag_cfd, 0.0, False)
   
+  #np.reshape()
   mri_coord = np.asarray((X,Y,Z)).reshape(field[0:3].shape[0], -1).T
   print(mri_coord.shape)
   mag_test = cfd_interp(mri_coord)
+  mag_test = np.reshape(mag_test,)
   
   print(mag_test.shape)
   m = VolumeSlicer(data=mag_test)#[minx:maxx, miny:maxy,:])
   m.configure_traits()
-
   
   

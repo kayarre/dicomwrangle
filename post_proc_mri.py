@@ -132,7 +132,7 @@ def create_image_volume(image_dict, mri_2_cfd_map, image_type, return_coord=True
       #store the raw image data
       array_dicom[:, :, dcm_files.index(filenamedcm)] = (
           np.asarray(ds.pixel_array, dtype=np.float64) * (
-          np.float64(ds.RescaleSlope) + np.float64(ds.RescaleIntercept)))
+          np.float64(ds.RescaleSlope)) + np.float64(ds.RescaleIntercept))
     
     #testindx = np.where(array_dicom !=0)
     #minx = np.min(testindx[0])
@@ -335,15 +335,17 @@ def read_cfd_sol_file(mapped_tuple, scale, return_coord=True):
     m.configure_traits()
 '''
 if __name__ == '__main__':
-  dcmpath='/Users/sansomk/caseFiles/mri/E431791260_FlowVol_01/' # mac
+  #dcmpath='/Users/sansomk/caseFiles/mri/E431791260_FlowVol_01/' # mac
   #dcmpath = "/home/sansomk/caseFiles/mri/images/E431791260_FlowVol_01/"
+  dcmpath = "/home/ksansom/caseFiles/mri//images/E431791260_FlowVol_01/"
   image_dict_pkl = "image_dict.pkl"
   fn_dict = {"X":"FlowX_*.dcm", "Y":"Flowy_*.dcm", "Z":"FlowZ_*.dcm", "MAG":"Mag_*.dcm"}
   image_dict, slice_location, trigger_time = load_dcm_dict(dcmpath, fn_dict, image_dict_pkl)
   print("trigger time", trigger_time)
 
   #cfd_ascii_path = "/home/sansomk/caseFiles/mri/cfd"
-  cfd_ascii_path = "/Users/sansomk/caseFiles/mri/solution_ascii"
+  #cfd_ascii_path = "/Users/sansomk/caseFiles/mri/solution_ascii"
+  cfd_ascii_path = "/raid/home/ksansom/caseFiles/mri/healthy/output_2/fluent_2/ascii_dir/"
   search_name = "mri_carotid-*"
   t_init = 2.8440  
   mri_2_cfd_map = sort_cfd_sol(cfd_ascii_path, search_name, t_init, trigger_time)
@@ -355,9 +357,9 @@ if __name__ == '__main__':
   print("max mri value", np.max(np.max(np.max(array_mag))))
   
   from volume_slicer_adv import VolumeSlicer
-  #m = VolumeSlicer(data=array_mag)
-  #m.configure_traits()
-  
+  m = VolumeSlicer(data=array_mag)
+  m.configure_traits()
+  '''
   field = read_cfd_sol_file(mapped_tuple=mri_2_cfd_map[0], scale="m2mm")
   print(field.shape)
   vmag_cfd = np.sqrt(np.power(field[3],2) + np.power(field[4],2)  + np.power(field[5],2))
@@ -391,5 +393,5 @@ if __name__ == '__main__':
   print(mag_test.shape)
   m = VolumeSlicer(data=mag_test)#[minx:maxx, miny:maxy,:])
   m.configure_traits()
-  
+  '''
   

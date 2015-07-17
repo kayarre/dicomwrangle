@@ -221,7 +221,6 @@ class VolumeSlicer(HasTraits):
                                                 y=position2d[1],
                                                 z=0)
 
-        # Finally re-enable rendering
         self.disable_render = False
 
     @on_trait_change('disable_render')
@@ -262,10 +261,12 @@ class VolumeSlicer(HasTraits):
 ################################################################################
 if __name__ == '__main__':
     #dcm_path = "/home/sansomk/caseFiles/mri/images/E431791260_Merge/0.4/102"
-    dcm_path = "/home/sansomk/caseFiles/mri/images/E431791260_FlowVol_01/mag"
+    #dcm_path = "/home/sansomk/caseFiles/mri/images/E431791260_FlowVol_01/mag"
+    dcm_path = "/home/ksansom/caseFiles/mri/images/0.4/102/"
     dcm_files = []
     slice_location = []
     acq_N = []
+    trig_count = 0
     for dirname, subdirlist, filelist in os.walk(dcm_path):
       for filen in filelist:
         filePath = os.path.join(dirname, filen)
@@ -275,18 +276,27 @@ if __name__ == '__main__':
         except Exception as e: 
           print(str(e))
           print("error: {0}".format(filen))
-        if (f.TriggerTime < 1.0 and filePath not in dcm_files):
+        
+        if (hasattr(f, "TriggerTime")):
+          if (f.TriggerTime < 1.0 and filePath not in dcm_files):
+            dcm_files.append(filePath)
+            slice_location.append(f.SliceLocation)
+            acq_N.append(f.AcquisitionNumber)
+        else:
+          trig_count += 1
           dcm_files.append(filePath)
           slice_location.append(f.SliceLocation)
           acq_N.append(f.AcquisitionNumber)
+    if (trig_count > 0):
+        print("No Trigger Time found in {0} images out of {1} images".format(trig_count, len(dcm_files)))
         #else:
         #  dcm_files.append(filePath)
     path_loc = zip(dcm_files, slice_location)
     path_loc.sort(key=lambda x: x[1])
     dcm_files, slice_location = zip(*path_loc)
-    print(slice_location, acq_N)
+    #print(slice_location, acq_N)
     # get reference image
-    print(len(dcm_files))
+    #print(len(dcm_files))
     ref_image = dicom.read_file(dcm_files[0])
     # load dimensions based on the number of rows columns and slices
     const_pixel_dims = (int(ref_image.Rows), int(ref_image.Columns), len(dcm_files))
@@ -319,7 +329,7 @@ if __name__ == '__main__':
       ds = dicom.read_file(filenamedcm)
       #store the raw image data
       array_dicom[:, :, dcm_files.index(filenamedcm)] = ds.pixel_array
-    '''
+    
     testindx = np.where(array_dicom !=0)
     minx = np.min(testindx[0])
     miny = np.min(testindx[1])
@@ -327,11 +337,11 @@ if __name__ == '__main__':
     maxx = np.max(testindx[0])
     maxy = np.max(testindx[1])
     maxz = np.max(testindx[2])
-    '''
+    
     
     # Create some data
     #x, y, z = np.ogrid[-5:5:100j, -5:5:100j, -5:5:100j]
     #data = np.sin(3*x)/x + 0.05*z**2 + np.cos(3*y)
 
-    m = VolumeSlicer(data=array_dicom)#[minx:maxx, miny:maxy,:])
+    m = VolumeSlicer(data=array_dicom[minx:maxx, miny:maxy,:])
     m.configure_traits()

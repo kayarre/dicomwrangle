@@ -329,7 +329,7 @@ if __name__ == '__main__':
       ds = dicom.read_file(filenamedcm)
       #store the raw image data
       array_dicom[:, :, dcm_files.index(filenamedcm)] = ds.pixel_array
-    
+    print(array_dicom.shape)
     testindx = np.where(array_dicom !=0)
     minx = np.min(testindx[0])
     miny = np.min(testindx[1])
@@ -342,6 +342,6 @@ if __name__ == '__main__':
     # Create some data
     #x, y, z = np.ogrid[-5:5:100j, -5:5:100j, -5:5:100j]
     #data = np.sin(3*x)/x + 0.05*z**2 + np.cos(3*y)
-
+    print(array_dicom[minx:maxx, miny:maxy,:].shape)
     m = VolumeSlicer(data=array_dicom[minx:maxx, miny:maxy,:])
     m.configure_traits()

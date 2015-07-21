@@ -357,7 +357,11 @@ if __name__ == '__main__':
   print("max mri value", np.max(np.max(np.max(array_mag))))
   
   from volume_slicer_adv import VolumeSlicer
-  m = VolumeSlicer(data=array_mag)
+  rotate90 = np.rot90(array_mag,1)
+  switch = np.swapaxes(rotate90,1,2)
+  rotate90 = np.rot90(switch,0)
+  print(rotate90.shape)
+  m = VolumeSlicer(data=rotate90)
   m.configure_traits()
   '''
   field = read_cfd_sol_file(mapped_tuple=mri_2_cfd_map[0], scale="m2mm")

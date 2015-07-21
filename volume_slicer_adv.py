@@ -337,11 +337,12 @@ if __name__ == '__main__':
     maxx = np.max(testindx[0])
     maxy = np.max(testindx[1])
     maxz = np.max(testindx[2])
-    
+    array_dicom.dump("merge")
     
     # Create some data
     #x, y, z = np.ogrid[-5:5:100j, -5:5:100j, -5:5:100j]
     #data = np.sin(3*x)/x + 0.05*z**2 + np.cos(3*y)
     print(array_dicom[minx:maxx, miny:maxy,:].shape)
-    m = VolumeSlicer(data=array_dicom[minx:maxx, miny:maxy,:])
+    m = VolumeSlicer(data=array_dicom[minx:maxx, miny:maxy, :])
     m.configure_traits()
+    array_dicom[minx:maxx, miny:maxy,:].dump("mergefiltered")

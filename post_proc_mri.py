@@ -356,13 +356,26 @@ if __name__ == '__main__':
   print("mri array shapes", array_mag.shape, X.shape, Y.shape, Z.shape)  
   print("max mri value", np.max(np.max(np.max(array_mag))))
   
+
+  
   from volume_slicer_adv import VolumeSlicer
   rotate90 = np.rot90(array_mag,1)
   switch = np.swapaxes(rotate90,1,2)
   rotate90 = np.rot90(switch,0)
   print(rotate90.shape)
+  rotate90.dump('4dflow')
   m = VolumeSlicer(data=rotate90)
   m.configure_traits()
+  
+  testindx = np.where(rotate90 !=0)
+  minx = np.min(testindx[0])
+  miny = np.min(testindx[1])
+  minz = np.min(testindx[2])
+  maxx = np.max(testindx[0])
+  maxy = np.max(testindx[1])
+  maxz = np.max(testindx[2])  
+  
+  rotate90[minx:maxx, miny:maxy, :].dump('4dflowfiltered')
   '''
   field = read_cfd_sol_file(mapped_tuple=mri_2_cfd_map[0], scale="m2mm")
   print(field.shape)

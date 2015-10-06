@@ -34,7 +34,7 @@ def transformMatrix(iminfo):
       z_spacing = np.float64(iminfo.SliceThickness)
       
   #Translate to put top left pixel at ImagePositionPatient
-  Tipp = np.array([[1., 0.0, 0.0, ipp[0]], 
+  Tipp = np.array([[1.0, 0.0, 0.0, ipp[0]], 
                    [0.0, 1.0, 0.0, ipp[1]],
                    [0.0, 0.0, 1.0, ipp[2]],
                    [0.0, 0.0, 0.0, 1.0]], dtype=np.float64)
@@ -98,12 +98,30 @@ def getTransformMatrix(iminfo1, iminfo2):
 
   return M, Rot
 
-if __name__ == '__main__':
-  ds1 = dicom.read_file("/home/ksansom/caseFiles/mri/images/0.4/102/E431791260S201I214.dcm")
-  ds2 = dicom.read_file("/home/ksansom/caseFiles/mri/images/E431791260_FlowVol_01/mag/Mag_397.dcm")
+def transform2(iminfo1):
+  cos = iminfo1.ImageOrientationPatient
+  cosines = [np.float64(val) for val in cos]
+  ipp = iminfo1.ImagePositionPatient
   
-
+  normal = [0., 0., 0.]
+  normal[0] = cosines[1]*cosines[5] - cosines[2]*cosines[4]
+  normal[1] = cosines[2]*cosines[3] - cosines[0]*cosines[5]
+  normal[2] = cosines[0]*cosines[4] - cosines[1]*cosines[3]
+  print(normal)
+  dist = 0.0
+  for i in range(3):
+    dist += normal[i]*ipp[i]
+  
+  print(dist)
+  return dist
+  
+if __name__ == '__main__':
+  ds1 = dicom.read_file('/home/ksansom/caseFiles/mri/images/0.4/102/E431791260S201I001.dcm')
+  ds2 = dicom.read_file('/home/ksansom/caseFiles/mri/images/0.4/102/E431791260S201I002.dcm')
   
   M, Rot = getTransformMatrix(ds1, ds2)
   print(M)
   print(Rot)
+  dist1 = transform2(ds1)
+  dist2 = transform2(ds2)
+  print(dist2-dist1)

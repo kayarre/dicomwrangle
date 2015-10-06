@@ -12,8 +12,10 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button, RadioButtons
 
 
-dcmpath='/Users/sansomk/Downloads/0.4/102'
+#dcmpath='/Users/sansomk/Downloads/0.4/102'
+dcmpath='/home/ksansom/caseFiles/mri/images/0.4/102'
 dcm_files = []
+location = []
 for dirname, subdirlist, filelist in os.walk(dcmpath):
     for filen in  filelist:
         #print(dirname, subdirlist, filelist)
@@ -22,11 +24,14 @@ for dirname, subdirlist, filelist in os.walk(dcmpath):
             filePath = os.path.join(dirname,filen)
             #print(filePath)
             f = dicom.read_file(filePath, stop_before_pixels=True)
+            location.append(f.)
             dcm_files.append(filePath)
         except:
             print("error: {0}".format(filen))
             
 print('hello')
+
+
 # Get ref file
 RefDs = dicom.read_file(dcm_files[0])
 

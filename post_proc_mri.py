@@ -335,17 +335,17 @@ def read_cfd_sol_file(mapped_tuple, scale, return_coord=True):
     m.configure_traits()
 '''
 if __name__ == '__main__':
-  #dcmpath='/Users/sansomk/caseFiles/mri/E431791260_FlowVol_01/' # mac
+  dcmpath='/Users/sansomk/caseFiles/mri/E431791260_FlowVol_01/' # mac
   #dcmpath = "/home/sansomk/caseFiles/mri/images/E431791260_FlowVol_01/"
-  dcmpath = "/home/ksansom/caseFiles/mri//images/E431791260_FlowVol_01/"
+  #dcmpath = "/home/ksansom/caseFiles/mri//images/E431791260_FlowVol_01/"
   image_dict_pkl = "image_dict.pkl"
   fn_dict = {"X":"FlowX_*.dcm", "Y":"Flowy_*.dcm", "Z":"FlowZ_*.dcm", "MAG":"Mag_*.dcm"}
   image_dict, slice_location, trigger_time = load_dcm_dict(dcmpath, fn_dict, image_dict_pkl)
   print("trigger time", trigger_time)
 
   #cfd_ascii_path = "/home/sansomk/caseFiles/mri/cfd"
-  #cfd_ascii_path = "/Users/sansomk/caseFiles/mri/solution_ascii"
-  cfd_ascii_path = "/raid/home/ksansom/caseFiles/mri/healthy/output_2/fluent_2/ascii_dir/"
+  cfd_ascii_path = "/Users/sansomk/caseFiles/mri/solution_ascii"
+  #cfd_ascii_path = "/raid/home/ksansom/caseFiles/mri/healthy/output_2/fluent_2/ascii_dir/"
   search_name = "mri_carotid-*"
   t_init = 2.8440  
   mri_2_cfd_map = sort_cfd_sol(cfd_ascii_path, search_name, t_init, trigger_time)
@@ -365,6 +365,7 @@ if __name__ == '__main__':
   print(rotate90.shape)
   rotate90.dump('4dflow')
   m = VolumeSlicer(data=rotate90)
+  #m = VolumeSlicer(data=array_mag)
   m.configure_traits()
   
   testindx = np.where(rotate90 !=0)

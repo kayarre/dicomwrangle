@@ -262,7 +262,8 @@ class VolumeSlicer(HasTraits):
 if __name__ == '__main__':
     #dcm_path = "/home/sansomk/caseFiles/mri/images/E431791260_Merge/0.4/102"
     #dcm_path = "/home/sansomk/caseFiles/mri/images/E431791260_FlowVol_01/mag"
-    dcm_path = "/home/ksansom/caseFiles/mri/images/0.4/102/"
+    #dcm_path = "/home/ksansom/caseFiles/mri/images/0.4/102/"
+    dcm_path = "/Users/sansomk/caseFiles/mri/E431791260_merge/0.4/102"
     dcm_files = []
     slice_location = []
     acq_N = []

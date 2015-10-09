@@ -11,41 +11,85 @@ import numpy as np
 import os
 import dicom
 
+class StandardOrientationException(Exception):
+  def __init__(self, value):
+    self.value = value
+  def __str__(self):
+    return repr(self.value)
+
+def bipedCheck(iminfo):
+  """
+  If Anatomical Orientation Type (0010,2210) is absent or has a value
+  of BIPED, the x-axis is increasing to the left hand side of the patient.
+  The y-axis is increasing to the posterior side of the patient.
+  The z-axis is increasing toward the head of the patient.
+  @param dicom data iminfo contains image info
+  
+  """
+    #check coordinate system
+  biped = False
+  if((0x0010, 0x2210) in iminfo.keys()):
+    axis_str = iminfo[(0x0010, 0x2210)]
+    if(axis_str == "BIPED"):
+      biped = True
+    else:
+      print("something weird with coordinate sys")
+  else:
+    biped = True
+    
+  if( biped == False):
+    raise StandardOrientationException("not using standard axes")
+  # add the standard axes here
+  return
+
+
 def transformMatrix(iminfo):
   """
   This function calculates the 4x4 transform matrix from the image
   coordinates to patient coordinates.
   """
+  dt = np.float64
+  
+
+    
+    
   # converts strings to doubles
   # image position patient  
-  ipp = np.array(iminfo.ImagePositionPatient, dtype=np.float64)
+  ipp = np.array(iminfo.ImagePositionPatient, dtype=dt)
   #image orientation patient  
-  iop = np.array(iminfo.ImageOrientationPatient, dtype=np.float64)
+  iop = np.array(iminfo.ImageOrientationPatient, dtype=dt)
+  print("ipp", ipp)
+  print("iop", iop)
   # pixel spacing
-  ps = np.array(iminfo.PixelSpacing, dtype=np.float64)
+  ps = np.array(iminfo.PixelSpacing, dtype=dt)
   
   #check it whether image has been interpolated
   if (hasattr(iminfo, 'SpacingBetweenSlices')):
       if(iminfo.SpacingBetweenSlices < iminfo.SliceThickness):
-          z_spacing = np.float64(iminfo.SpacingBetweenSlices)
+          z_spac = iminfo.SpacingBetweenSlices
       else:
-          z_spacing = np.float64(iminfo.SliceThickness)
+          z_spac = iminfo.SliceThickness
   else:
-      z_spacing = np.float64(iminfo.SliceThickness)
+      z_spac= iminfo.SliceThickness
       
+  print("z_spac", z_spac)
+  z_spacing = dt(z_spac)
   #Translate to put top left pixel at ImagePositionPatient
   Tipp = np.array([[1.0, 0.0, 0.0, ipp[0]], 
                    [0.0, 1.0, 0.0, ipp[1]],
                    [0.0, 0.0, 1.0, ipp[2]],
-                   [0.0, 0.0, 0.0, 1.0]], dtype=np.float64)
+                   [0.0, 0.0, 0.0, 1.0]], dtype=dt)
   # r and c make up direction cosines
   r = iop[0:3]
+  print("r=iop[0:3]", r)
   c = iop[3:6]
+  print("c=iop[3:6]", c)
   s = np.cross(r, c) # take the cross product
+  print("s=rxc", s)
   R = np.array([[r[0], c[0], s[0], 0],
                 [r[1], c[1], s[1], 0],
                 [r[2], c[2], s[2], 0],
-                [0.0, 0.0, 0.0, 1.0]], dtype=np.float64)
+                [0.0, 0.0, 0.0, 1.0]], dtype=dt)
   
   # not sure about this, both images are 3D but have different values
   
@@ -54,16 +98,16 @@ def transformMatrix(iminfo):
     S = np.array([[ps[1], 0.0, 0.0, 0.0],
                   [0.0, ps[0], 0.0, 0.0],
                   [0.0, 0.0, z_spacing, 0.0],
-                  [0.0, 0.0, 0.0, 1.0]], dtype=np.float64)
+                  [0.0, 0.0, 0.0, 1.0]], dtype=dt)
                   
   else: # 2D epi dti
     # info.SpacingBetweenSlices
     S = np.array([[ps[1], 0.0, 0.0, 0.0],
                 [0.0, ps[0], 0.0, 0.0],
                 [0.0, 0.0, z_spacing, 0.0],
-                [0.0, 0.0, 0.0, 1.0]], dtype=np.float64)
-
-  T0 = np.eye(4, k=0, dtype=np.float64)
+                [0.0, 0.0, 0.0, 1.0]], dtype=dt)
+  print("S", S)
+  T0 = np.eye(4, k=0, dtype=dt)
   '''
   T0 = np.array([[1., 0.0, 0.0, 0.0], 
                    [0.0, 1.0, 0.0, 0.0],
@@ -107,17 +151,19 @@ def transform2(iminfo1):
   normal[0] = cosines[1]*cosines[5] - cosines[2]*cosines[4]
   normal[1] = cosines[2]*cosines[3] - cosines[0]*cosines[5]
   normal[2] = cosines[0]*cosines[4] - cosines[1]*cosines[3]
-  print(normal)
+  #print(normal)
   dist = 0.0
   for i in range(3):
-    dist += normal[i]*ipp[i]
+    dist += normal[i]*np.float64(ipp[i])
   
-  print(dist)
+  #print(dist)
   return dist
   
 if __name__ == '__main__':
-  ds1 = dicom.read_file('/home/ksansom/caseFiles/mri/images/0.4/102/E431791260S201I001.dcm')
-  ds2 = dicom.read_file('/home/ksansom/caseFiles/mri/images/0.4/102/E431791260S201I002.dcm')
+  #dcm_path = "/home/ksansom/caseFiles/mri/images/0.4/102/"
+  dcm_path = "/Users/sansomk/caseFiles/mri/E431791260_merge/0.4/102"
+  ds1 = dicom.read_file(os.path.join(dcm_path, 'E431791260S201I001.dcm'))
+  ds2 = dicom.read_file(os.path.join(dcm_path, 'E431791260S201I002.dcm'))
   
   M, Rot = getTransformMatrix(ds1, ds2)
   print(M)

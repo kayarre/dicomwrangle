@@ -13,7 +13,7 @@ import os
 #from scipy import interpolate
 import glob
 import re
-import dicom
+from pydicom import dicomio
 #from matplotlib.widgets import Slider, Button, RadioButtons
 import fnmatch
 import pickle
@@ -33,7 +33,7 @@ def build_dcm_dict(dcmpath, fn_dict, image_dict_pkl="image_dict.pkl"):
             #print(filePath)
             #print(f.SliceLocation)
             try:
-                f = dicom.read_file(filePath, stop_before_pixels=True)
+                f = dicomio.read_file(filePath, stop_before_pixels=True)
             except Exception as e: 
                print(str(e))
                print("error: {0}".format(filen))
@@ -107,7 +107,7 @@ def create_image_volume(image_dict, mri_2_cfd_map, image_type, return_coord=True
     
     # get reference image
     #print(len(dcm_files), dcm_files)
-    ref_image = dicom.read_file(dcm_files[0])
+    ref_image = dicomio.read_file(dcm_files[0])
     # load dimensions based on the number of rows columns and slices
     const_pixel_dims = (int(ref_image.Rows), int(ref_image.Columns), len(dcm_files))
     
@@ -128,7 +128,7 @@ def create_image_volume(image_dict, mri_2_cfd_map, image_type, return_coord=True
     #loop through all the DICOM FILES
     for filenamedcm in dcm_files:
       #read the file
-      ds = dicom.read_file(filenamedcm)
+      ds = dicomio.read_file(filenamedcm)
       #store the raw image data
       array_dicom[:, :, dcm_files.index(filenamedcm)] = (
           np.asarray(ds.pixel_array, dtype=np.float64) * (
@@ -271,7 +271,7 @@ def read_cfd_sol_file(mapped_tuple, scale, return_coord=True):
         filePath = os.path.join(dirname, filen)
         try:          
           #print(filePath)
-          f = dicom.read_file(filePath, stop_before_pixels=True)
+          f = dicomio.read_file(filePath, stop_before_pixels=True)
         except Exception as e: 
           print(str(e))
           print("error: {0}".format(filen))
@@ -287,7 +287,7 @@ def read_cfd_sol_file(mapped_tuple, scale, return_coord=True):
     print(slice_location, acq_N)
     # get reference image
     print(len(dcm_files))
-    ref_image = dicom.read_file(dcm_files[0])
+    ref_image = dicomio.read_file(dcm_files[0])
     # load dimensions based on the number of rows columns and slices
     const_pixel_dims = (int(ref_image.Rows), int(ref_image.Columns), len(dcm_files))
     
@@ -314,7 +314,7 @@ def read_cfd_sol_file(mapped_tuple, scale, return_coord=True):
     #loop through all the DICOM FILES
     for filenamedcm in dcm_files:
       #read the file
-      ds = dicom.read_file(filenamedcm)
+      ds = dicomio.read_file(filenamedcm)
       #store the raw image data
       array_dicom[:, :, dcm_files.index(filenamedcm)] = ds.pixel_array
     

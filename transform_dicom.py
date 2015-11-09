@@ -9,7 +9,7 @@ http://cmic.cs.ucl.ac.uk/fileadmin/cmic/Documents/DavidAtkinson/DICOM_6up.pdf
 """
 import numpy as np
 import os
-import dicom
+from pydicom import dicomio
 
 class StandardOrientationException(Exception):
   def __init__(self, value):
@@ -162,8 +162,8 @@ def transform2(iminfo1):
 if __name__ == '__main__':
   #dcm_path = "/home/ksansom/caseFiles/mri/images/0.4/102/"
   dcm_path = "/Users/sansomk/caseFiles/mri/E431791260_merge/0.4/102"
-  ds1 = dicom.read_file(os.path.join(dcm_path, 'E431791260S201I001.dcm'))
-  ds2 = dicom.read_file(os.path.join(dcm_path, 'E431791260S201I002.dcm'))
+  ds1 = dicomio.read_file(os.path.join(dcm_path, 'E431791260S201I001.dcm'))
+  ds2 = dicomio.read_file(os.path.join(dcm_path, 'E431791260S201I002.dcm'))
   
   M, Rot = getTransformMatrix(ds1, ds2)
   print(M)

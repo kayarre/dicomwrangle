@@ -11,7 +11,7 @@ from mayavi import mlab
 from mayavi.core.api import PipelineBase, Source
 from mayavi.core.ui.api import SceneEditor, MlabSceneModel
 
-import dicom
+from pydicom import dicomio
 import os
 
 
@@ -273,7 +273,7 @@ if __name__ == '__main__':
         filePath = os.path.join(dirname, filen)
         try:          
           #print(filePath)
-          f = dicom.read_file(filePath, stop_before_pixels=True)
+          f = dicomio.read_file(filePath, stop_before_pixels=True)
         except Exception as e: 
           print(str(e))
           print("error: {0}".format(filen))
@@ -298,7 +298,7 @@ if __name__ == '__main__':
     #print(slice_location, acq_N)
     # get reference image
     #print(len(dcm_files))
-    ref_image = dicom.read_file(dcm_files[0])
+    ref_image = dicomio.read_file(dcm_files[0])
     # load dimensions based on the number of rows columns and slices
     const_pixel_dims = (int(ref_image.Rows), int(ref_image.Columns), len(dcm_files))
     
@@ -327,7 +327,7 @@ if __name__ == '__main__':
     #loop through all the DICOM FILES
     for filenamedcm in dcm_files:
       #read the file
-      ds = dicom.read_file(filenamedcm)
+      ds = dicomio.read_file(filenamedcm)
       #store the raw image data
       array_dicom[:, :, dcm_files.index(filenamedcm)] = ds.pixel_array
     print(array_dicom.shape)

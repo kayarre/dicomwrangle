@@ -24,7 +24,7 @@ def bipedCheck(iminfo):
   The y-axis is increasing to the posterior side of the patient.
   The z-axis is increasing toward the head of the patient.
   @param dicom data iminfo contains image info
-  
+
   """
     #check coordinate system
   biped = False
@@ -36,7 +36,7 @@ def bipedCheck(iminfo):
       print("something weird with coordinate sys")
   else:
     biped = True
-    
+
   if( biped == False):
     raise StandardOrientationException("not using standard axes")
   # add the standard axes here
@@ -49,20 +49,20 @@ def transformMatrix(iminfo):
   coordinates to patient coordinates.
   """
   dt = np.float64
-  
 
-    
-    
+
+
+
   # converts strings to doubles
-  # image position patient  
+  # image position patient
   ipp = np.array(iminfo.ImagePositionPatient, dtype=dt)
-  #image orientation patient  
+  #image orientation patient
   iop = np.array(iminfo.ImageOrientationPatient, dtype=dt)
   print("ipp", ipp)
   print("iop", iop)
   # pixel spacing
   ps = np.array(iminfo.PixelSpacing, dtype=dt)
-  
+
   #check it whether image has been interpolated
   if (hasattr(iminfo, 'SpacingBetweenSlices')):
       if(iminfo.SpacingBetweenSlices < iminfo.SliceThickness):
@@ -71,11 +71,11 @@ def transformMatrix(iminfo):
           z_spac = iminfo.SliceThickness
   else:
       z_spac= iminfo.SliceThickness
-      
+
   print("z_spac", z_spac)
   z_spacing = dt(z_spac)
   #Translate to put top left pixel at ImagePositionPatient
-  Tipp = np.array([[1.0, 0.0, 0.0, ipp[0]], 
+  Tipp = np.array([[1.0, 0.0, 0.0, ipp[0]],
                    [0.0, 1.0, 0.0, ipp[1]],
                    [0.0, 0.0, 1.0, ipp[2]],
                    [0.0, 0.0, 0.0, 1.0]], dtype=dt)
@@ -90,16 +90,16 @@ def transformMatrix(iminfo):
                 [r[1], c[1], s[1], 0],
                 [r[2], c[2], s[2], 0],
                 [0.0, 0.0, 0.0, 1.0]], dtype=dt)
-  
+
   # not sure about this, both images are 3D but have different values
-  
+
   if(iminfo.MRAcquisitionType=='3D'): # 3D turboflash
     # info.SliceThickness
     S = np.array([[ps[1], 0.0, 0.0, 0.0],
                   [0.0, ps[0], 0.0, 0.0],
                   [0.0, 0.0, z_spacing, 0.0],
                   [0.0, 0.0, 0.0, 1.0]], dtype=dt)
-                  
+
   else: # 2D epi dti
     # info.SpacingBetweenSlices
     S = np.array([[ps[1], 0.0, 0.0, 0.0],
@@ -109,20 +109,20 @@ def transformMatrix(iminfo):
   print("S", S)
   T0 = np.eye(4, k=0, dtype=dt)
   '''
-  T0 = np.array([[1., 0.0, 0.0, 0.0], 
+  T0 = np.array([[1., 0.0, 0.0, 0.0],
                    [0.0, 1.0, 0.0, 0.0],
                    [0.0, 0.0, 1.0, 0.0]],
                    [0.0, 0.0, 0.0, 1.0]], dtype=np.float64)
   '''
-  
+
   M = np.dot(Tipp, np.dot(R, np.dot(S, T0)))
 
   return M, R
 
 def getTransformMatrix(iminfo1, iminfo2):
   """
-  This function calculates the 4x4 transform and 3x3 rotation matrix 
-  between two image coordinate systems. 
+  This function calculates the 4x4 transform and 3x3 rotation matrix
+  between two image coordinate systems.
   M=Tipp*R*S*T0;
   Tipp:translation
   R:rotation
@@ -131,7 +131,7 @@ def getTransformMatrix(iminfo1, iminfo2):
   info1: dicominfo of 1st coordinate system
   info2: dicominfo of 2nd coordinate system
   Rot: rotation matrix between coordinate system
-  
+
   Kurt Sansom 2015
   based on matlab code by Alper Yaman
   """
@@ -146,7 +146,7 @@ def transform2(iminfo1):
   cos = iminfo1.ImageOrientationPatient
   cosines = [np.float64(val) for val in cos]
   ipp = iminfo1.ImagePositionPatient
-  
+
   normal = [0., 0., 0.]
   normal[0] = cosines[1]*cosines[5] - cosines[2]*cosines[4]
   normal[1] = cosines[2]*cosines[3] - cosines[0]*cosines[5]
@@ -155,16 +155,16 @@ def transform2(iminfo1):
   dist = 0.0
   for i in range(3):
     dist += normal[i]*np.float64(ipp[i])
-  
+
   #print(dist)
   return dist
-  
+
 if __name__ == '__main__':
-  #dcm_path = "/home/ksansom/caseFiles/mri/images/0.4/102/"
-  dcm_path = "/Users/sansomk/caseFiles/mri/E431791260_merge/0.4/102"
+  dcm_path = "/home/ksansom/caseFiles/mri/images/0.4/102"
+  #dcm_path = "/Users/sansomk/caseFiles/mri/E431791260_merge/0.4/102"
   ds1 = dicomio.read_file(os.path.join(dcm_path, 'E431791260S201I001.dcm'))
   ds2 = dicomio.read_file(os.path.join(dcm_path, 'E431791260S201I002.dcm'))
-  
+
   M, Rot = getTransformMatrix(ds1, ds2)
   print(M)
   print(Rot)

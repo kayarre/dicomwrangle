@@ -15,6 +15,7 @@ def create_dir(dir_path, subdir):
 #image_dir = "/home/ksansom/caseFiles/mri/VWI_proj/case2/cine/term_ica"
 #pkl_path = os.path.join(image_dir, "term_ica.pkl")
 
+xyz_keys = ["x", "y", "z"]
 
 # define the mesh to slice
 mesh = vtk.vtkPLYReader()
@@ -38,6 +39,8 @@ with open(pkl_path, 'rb') as handle:
 contour_dict = {}
 for case in case_dict.keys():
     contour_dict[case] = {}
+    # confirmed that for this set of images only one image is needed to set
+    # the direction and normal
     file_ = case_dict[case]["images"]["otherx"][0] # read the first file
     f_image = pydicom.read_file(file_, stop_before_pixels=False)
 
@@ -61,7 +64,6 @@ for case in case_dict.keys():
     p_cp[1] = -p_cp[1]
     #image spacing
     spacing = np.array([float(x) for x in f_image.PixelSpacing])
-
     cutter = vtk.vtkCutter()
     cutter.SetInputConnection(mesh.GetOutputPort())
 
@@ -93,15 +95,17 @@ for case in case_dict.keys():
     writertest.SetFileName(file_name_whole)
     writertest.Write()
 
+    contour_dict[case]["normal"] = n
     contour_dict[case]["contour_pd"] = file_name_whole
     contour_dict[case]["trans"] = {}
 
     file_name_list = []
 
     #only need one transform per case as its a plane (or at least I hope)
+    #print(f_image.SliceThickness, spacing)
     trans = vtk.vtkMatrix4x4()
-    trans.DeepCopy((dir_cos[3]*spacing[0], dir_cos[0]*spacing[1], n[0], p[0],
-                     dir_cos[4]*spacing[0], dir_cos[1]*spacing[1], n[1], p[1],
+    trans.DeepCopy((dir_cos[3]*spacing[0], dir_cos[0]*spacing[1], n[0], p[0],# + 0.5*spacing[0],
+                     dir_cos[4]*spacing[0], dir_cos[1]*spacing[1], n[1], p[1],# - 0.5*spacing[1],
                      dir_cos[5]*spacing[0], dir_cos[2]*spacing[1], n[2], p[2],
                      0, 0, 0, 1.0))
 

@@ -12,14 +12,14 @@ def create_dir(dir_path, subdir):
     return directory
 
 # read in the pickle file with the cine image data
-#image_dir = "/home/ksansom/caseFiles/mri/VWI_proj/case2/cine/term_ica"
+#image_dir = "/home/sansomk/caseFiles/mri/VWI_proj/case2/cine/term_ica"
 #pkl_path = os.path.join(image_dir, "term_ica.pkl")
 
 xyz_keys = ["x", "y", "z"]
 
 # define the mesh to slice
 mesh = vtk.vtkPLYReader()
-case_path = "/home/ksansom/caseFiles/mri/VWI_proj/case2"
+case_path = "/home/sansomk/caseFiles/mri/VWI_proj/case2"
 file_path_mesh = os.path.join(case_path,"vmtk")
 
 contour_dir = "contours"
